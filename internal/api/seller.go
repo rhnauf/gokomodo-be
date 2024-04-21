@@ -1,22 +1,26 @@
 package api
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
+
+	"github.com/rhnauf/gokomodo-be/internal/controller"
+	"github.com/rhnauf/gokomodo-be/internal/repository"
+	"github.com/rhnauf/gokomodo-be/internal/service"
 )
 
-func sellerRoutes(r chi.Router) {
-	r.Use(LogSeller)
-	r.Get("/seller", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("seller"))
-	})
-}
+func (h *Handler) sellerRoutes(r chi.Router) {
+	dbClient := h.DBClient.Client
 
-func LogSeller(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("seller hit")
-		next.ServeHTTP(w, r)
-	})
+	productRepository := repository.NewProductRepository(dbClient)
+	orderRepository := repository.NewOrderRepository(dbClient)
+
+	sellerService := service.NewSellerService(productRepository, orderRepository)
+
+	sellerController := controller.NewSellerController(sellerService)
+
+	r.Use(AuthJWTSeller)
+	r.Get("/list-products-seller", sellerController.GetListProduct)
+	r.Post("/products", sellerController.CreateNewProduct)
+	r.Get("/list-orders-seller", sellerController.GetListOrder)
+	r.Put("/orders/{id}", sellerController.AcceptOrder)
 }

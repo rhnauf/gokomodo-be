@@ -11,15 +11,20 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/rhnauf/gokomodo-be/external/db"
 )
 
 type Handler struct {
-	Router *chi.Mux
-	Server *http.Server
+	Router   *chi.Mux
+	Server   *http.Server
+	DBClient *db.Database
 }
 
-func NewHandler() *Handler {
-	r := &Handler{}
+func NewHandler(dbClient *db.Database) *Handler {
+	r := &Handler{
+		DBClient: dbClient,
+	}
 
 	r.Router = chi.NewRouter()
 	r.mapRoutes()
@@ -37,8 +42,9 @@ func (h *Handler) mapRoutes() {
 
 	// v1 routes
 	h.Router.Route("/v1", func(r chi.Router) {
-		r.Group(buyerRoutes)
-		r.Group(sellerRoutes)
+		r.Group(h.authRoutes)
+		r.Group(h.buyerRoutes)
+		r.Group(h.sellerRoutes)
 	})
 
 	h.Router.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +59,7 @@ func (h *Handler) mapRoutes() {
 
 func (h *Handler) Serve() error {
 	go func() {
-		log.Println("starting web server on port:", os.Getenv("APP_PORT"))
+		log.Println("starting web server on port =>", os.Getenv("APP_PORT"))
 		if err := h.Server.ListenAndServe(); err != nil {
 			log.Println(err.Error())
 		}
