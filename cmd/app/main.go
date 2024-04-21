@@ -32,7 +32,7 @@ func run() error {
 	//if err != nil {
 	//	return err
 	//}
-	//
+
 	//err = seedSellersTable(dbClient.Client)
 	//if err != nil {
 	//	return err
